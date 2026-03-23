@@ -34,15 +34,11 @@ public class AuthenticationController {
     @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponse>> login(@RequestBody AuthRequest request) {
         User user = userCredentialsService.findByName(request.getUserName());
-        if (user == null) {
+        if (user == null || !request.getPassword().equals(user.getPassword())) {
             return Mono.just(ResponseEntity.status(401).build());
         }
 
-        String userPassword = Optional.ofNullable(user).map(u -> u.getPassword()).orElse(null);
-        if (request.getPassword().equals(userPassword)) {
-            var token = jwtService.generateToken(user.getName(), user.getId());
-            return Mono.just(ResponseEntity.ok(new AuthResponse(token)));
-        }
-        return Mono.just(ResponseEntity.status(401).build());
+        String token = jwtService.generateToken(user.getName(), user.getId());
+        return Mono.just(ResponseEntity.ok(new AuthResponse(token)));
     }
 }
