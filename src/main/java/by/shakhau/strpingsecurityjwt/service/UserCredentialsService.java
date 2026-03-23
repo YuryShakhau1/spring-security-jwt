@@ -7,8 +7,9 @@ import java.util.Collection;
 public interface UserCredentialsService {
 
     Collection<User> findAll();
-    User findByName(String name);
+    User findById(Long userId);
+    User findByName(String userName);
     User createUser(User user);
-    User updateUser(String userName, User user);
-    void deleteByName(String name);
+    User updateUser(User user);
+    void deleteByName(Long userId);
 }

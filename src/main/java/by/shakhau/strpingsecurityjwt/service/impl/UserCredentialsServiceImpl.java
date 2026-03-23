@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class UserCredentialsServiceImpl implements UserCredentialsService {
 
     private AtomicLong maxUserId = new AtomicLong(0);
-    private Map<String, User> userMap = new HashMap<>();
+    private Map<Long, User> userMap = new HashMap<>();
 
     @Override
     public Collection<User> findAll() {
@@ -21,34 +22,44 @@ public class UserCredentialsServiceImpl implements UserCredentialsService {
     }
 
     @Override
-    public User findByName(String name) {
-        return userMap.get(name);
+    public User findById(Long userId) {
+        return userMap.get(userId);
+    }
+
+    @Override
+    public User findByName(String userName) {
+        return userMap.values().stream()
+                .filter(u -> userName.equals(u.getName()))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
     public User createUser(User user) {
-        if (userMap.containsKey(user.getName())) {
-            return userMap.get(user.getName());
+        if (findByName(user.getName()) != null) {
+            return null;
         }
+
         user.setId(maxUserId.incrementAndGet());
-        userMap.put(user.getName(), user);
+        userMap.put(user.getId(), user);
         return user;
     }
 
     @Override
-    public User updateUser(String userName, User user) {
-        User userFound = userMap.get(userName);
+    public User updateUser(User user) {
+        User userFound = userMap.get(user.getId());
         if (userFound == null) {
             return null;
         }
+
         user.setId(userFound.getId());
-        userMap.put(user.getName(), user);
-        userMap.remove(userName);
+        userMap.put(user.getId(), user);
+        userMap.remove(user.getId());
         return user;
     }
 
     @Override
-    public void deleteByName(String name) {
-        userMap.remove(name);
+    public void deleteByName(Long userId) {
+        userMap.remove(userId);
     }
 }

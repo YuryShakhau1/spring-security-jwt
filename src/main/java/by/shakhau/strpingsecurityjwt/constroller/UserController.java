@@ -1,6 +1,7 @@
 package by.shakhau.strpingsecurityjwt.constroller;
 
 import by.shakhau.strpingsecurityjwt.dto.User;
+import by.shakhau.strpingsecurityjwt.security.UserPrincipal;
 import by.shakhau.strpingsecurityjwt.service.UserCredentialsService;
 import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -24,34 +25,27 @@ public class UserController {
         return userCredentialsService.findAll();
     }
 
-    @GetMapping(value = "/{userName}", produces = APPLICATION_JSON_VALUE)
-    public User findByName(String userName) {
-        return userCredentialsService.findByName(userName);
+    @GetMapping(value = "/{userId}", produces = APPLICATION_JSON_VALUE)
+    public User findByName(@PathVariable Long userId) {
+        return userCredentialsService.findById(userId);
     }
 
-    @PostMapping(value = "/", produces = APPLICATION_JSON_VALUE)
-    public User createUser(@RequestBody User user) {
-        return userCredentialsService.createUser(user);
-    }
-
-    @PutMapping(value = "/{userName}", produces = APPLICATION_JSON_VALUE)
-    public User updateUser(
-            @PathVariable String userName,
-            @RequestBody User user,
-            Authentication authentication) {
-        String authUserName = (String) authentication.getPrincipal();
-        if (!userName.equals(authUserName)) {
-            throw new BadCredentialsException("Wrong user " + userName);
+    @PutMapping(value = "/", produces = APPLICATION_JSON_VALUE)
+    public User updateUser(@RequestBody User user, Authentication authentication) {
+        Long userId = user.getId();
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        if (!principal.getId().equals(userId)) {
+            throw new BadCredentialsException("Wrong user with id = " + userId);
         }
-        return userCredentialsService.updateUser(userName, user);
+        return userCredentialsService.updateUser(user);
     }
 
-    @DeleteMapping(value = "/{userName}", produces = APPLICATION_JSON_VALUE)
-    public void updateUser(@PathVariable String userName, Authentication authentication) {
-        String authUserName = (String) authentication.getPrincipal();
-        if (!userName.equals(authUserName)) {
-            throw new BadCredentialsException("Wrong user " + userName);
+    @DeleteMapping(value = "/{userId}", produces = APPLICATION_JSON_VALUE)
+    public void updateUser(@PathVariable Long userId, Authentication authentication) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        if (!principal.getId().equals(userId)) {
+            throw new BadCredentialsException("Wrong user with id = " + userId);
         }
-        userCredentialsService.deleteByName(userName);
+        userCredentialsService.deleteByName(userId);
     }
 }
