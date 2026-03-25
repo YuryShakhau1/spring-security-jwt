@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  postgres-security:
+    image: postgres:14.7-alpine
+    environment:
+      POSTGRES_USER: username
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: security_database
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready", "-d", "clients_database" ]  # Проверка доступности базы
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  postgres-security:

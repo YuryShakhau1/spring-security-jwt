@@ -1,7 +1,7 @@
 package by.shakhau.strpingsecurityjwt.security;
 
-import by.shakhau.strpingsecurityjwt.dto.User;
-import by.shakhau.strpingsecurityjwt.service.UserCredentialsService;
+import by.shakhau.strpingsecurityjwt.domain.model.User;
+import by.shakhau.strpingsecurityjwt.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ import java.util.Collections;
 public class AuthenticationController {
 
     private JwtService jwtService;
-    private UserCredentialsService userCredentialsService;
+    private UserService userService;
 
     @AllArgsConstructor
     @Getter
@@ -36,7 +36,7 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public Mono<ResponseEntity<AuthResponse>> login(@RequestBody AuthRequest request) {
-        User user = userCredentialsService.findByName(request.getUserName());
+        User user = userService.findByName(request.getUserName());
         if (user == null || !request.getPassword().equals(user.getPassword())) {
             return Mono.just(ResponseEntity.status(401).build());
         }
@@ -47,6 +47,6 @@ public class AuthenticationController {
 
     @PostMapping("/register")
     public User register(@RequestBody AuthRequest request) {
-        return userCredentialsService.createUser(new User(null, request.getUserName(), request.getPassword()));
+        return userService.createUser(new User(null, request.getUserName(), request.getPassword()));
     }
 }

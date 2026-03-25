@@ -1,10 +1,10 @@
 package by.shakhau.strpingsecurityjwt.service;
 
-import by.shakhau.strpingsecurityjwt.dto.User;
+import by.shakhau.strpingsecurityjwt.domain.model.User;
 
 import java.util.Collection;
 
-public interface UserCredentialsService {
+public interface UserService {
 
     Collection<User> findAll();
     User findById(Long userId);
