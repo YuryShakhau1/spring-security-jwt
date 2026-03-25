@@ -18,6 +18,7 @@ spring:
 app:
   jwt:
     secret: 4pcea76ef14939c1c0ea510f8fck57a80fcd94a7420fwe6bcd0a7567c272exjau
-    expiration: 900000
+    access-expiration: 900000
+    refresh-expiration: 86400000
   cors:
     allowedOrigins: http://localhost:8080

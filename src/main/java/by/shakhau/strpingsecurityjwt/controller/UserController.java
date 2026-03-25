@@ -1,4 +1,4 @@
-package by.shakhau.strpingsecurityjwt.constroller;
+package by.shakhau.strpingsecurityjwt.controller;
 
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.security.UserPrincipal;

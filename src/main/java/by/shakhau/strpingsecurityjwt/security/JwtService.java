@@ -4,47 +4,64 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JwtService {
 
     private final SecretKey secretKey;
-    private final long expiration;
+    private final long accessExpiration;
+    private final long refreshExpiration;
 
-    public JwtService(@Value("${app.jwt.secret}") String secret, @Value("${app.jwt.expiration}") long expiration) {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expiration = expiration;
+    public JwtService(JwtConfig jwtConfig) {
+        this.secretKey = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
+        this.accessExpiration = jwtConfig.getAccessExpiration();
+        this.refreshExpiration = jwtConfig.getRefreshExpiration();
     }
 
-    public String generateToken(Long userId, List<String> roles) {
+    public String generateAccessToken(Long userId, List<String> roles) {
         Date now = new Date();
-        Date expationDate = new Date(now.getTime() + expiration);
-
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("roles", roles)
                 .setIssuedAt(now)
-                .setExpiration(expationDate)
+                .setExpiration(new Date(now.getTime() + accessExpiration))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public Claims getClaims(String token) {
+    public String generateRefreshToken(Long userId, List<String> roles) {
+        Date now = new Date();
+        return Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .claim("session_id", UUID.randomUUID().toString())
+                .claim("roles", roles)
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + refreshExpiration))
+                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public boolean isTokenValid(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            Claims claims = getClaims(token);
+            return claims.getExpiration().after(new Date()); // Проверка истечения срока действия
         } catch (Exception e) {
-            return null;
+            return false;
         }
+    }
+
+    public Claims getClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
