@@ -1,13 +1,12 @@
 package by.shakhau.strpingsecurityjwt.security;
 
+import by.shakhau.strpingsecurityjwt.domain.model.RefreshTokenEntity;
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.service.RefreshTokenService;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.util.Collections;
-import java.util.Date;
 
 @AllArgsConstructor
 @RestController
@@ -49,8 +47,12 @@ public class AuthenticationController {
     }
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public User register(@RequestBody AuthRequest request) {
-        return userService.createUser(new User(null, request.getUserName(), request.getPassword()));
+    public Mono<ResponseEntity<String>> register(@RequestBody AuthRequest request) {
+        if (userService.createUser(new User(null, request.getUserName(), request.getPassword())) == null) {
+            return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).body("User already exists"));
+        }
+
+        return Mono.just(ResponseEntity.status(HttpStatus.OK).build());
     }
 
     @PostMapping("/login")
@@ -76,33 +78,46 @@ public class AuthenticationController {
         }
 
         Claims claims = jwtService.getClaims(request.getRefreshToken());
-        String sessionId = (String) claims.get("session_id");
         Long userId = Long.valueOf(claims.getSubject());
-        if (!refreshTokenService.existsByUserIdAndSessionId(userId, sessionId)) {
-            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+        String sessionId = (String) claims.get("session_id");
+        RefreshTokenEntity existingToken = refreshTokenService.findByUserIdAndSessionId(userId, sessionId);
+        if (request.getRefreshToken().equals(existingToken.getRefreshToken())) {
+            String accessToken = jwtService.generateAccessToken(userId, Collections.emptyList());
+            String refreshToken = jwtService.generateRefreshToken(userId, Collections.emptyList());
+            existingToken.setRefreshToken(refreshToken);
+            refreshTokenService.save(userId, refreshToken);
+            return Mono.just(ResponseEntity.ok(new TokenResponse(accessToken, refreshToken)));
         }
 
-        String accessToken = jwtService.generateAccessToken(userId, Collections.emptyList());
-        String refreshToken = jwtService.generateRefreshToken(userId, Collections.emptyList());
-        refreshTokenService.save(userId, refreshToken);
-
-        return Mono.just(ResponseEntity.ok(new TokenResponse(accessToken, refreshToken)));
+        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
     @DeleteMapping("/logout")
-    public Mono<ResponseEntity<?>> logout(@RequestBody RefreshTokenRequest request) {
-        Claims claims = jwtService.getClaims(request.getRefreshToken());
-        String sessionId = (String) claims.get("session_id");
-        Long userId = Long.valueOf(claims.getSubject());
-        refreshTokenService.deleteByUserIdAndSessionId(userId, sessionId);
-        return Mono.just(ResponseEntity.ok("Logged out successfully"));
+    public Mono<ResponseEntity<String>> logout(@RequestHeader("Authorization") String authHeader) {
+        var bearer = "Bearer ";
+        if (authHeader != null && authHeader.startsWith(bearer)) {
+            String accessToken = authHeader.substring(bearer.length());
+            Claims claims = jwtService.getClaims(accessToken);
+            Long userId = Long.valueOf(claims.getSubject());
+            String sessionId = (String) claims.get("session_id");
+            refreshTokenService.deleteByUserIdAndSessionId(userId, sessionId);
+            return Mono.just(ResponseEntity.status(HttpStatus.OK).body("Logout is successful"));
+        }
+
+        return Mono.error(new RuntimeException("Authorization header is missing or invalid"));
     }
 
     @DeleteMapping("/logout/all")
-    public Mono<ResponseEntity<?>> logoutAllSession(@RequestBody RefreshTokenRequest request) {
-        Claims claims = jwtService.getClaims(request.getRefreshToken());
-        Long userId = Long.valueOf(claims.getSubject());
-        refreshTokenService.deleteByUserId(userId);
-        return Mono.just(ResponseEntity.ok("Logged out all sessions successfully"));
+    public Mono<ResponseEntity<String>> logoutAllSession(@RequestHeader("Authorization") String authHeader) {
+        var bearer = "Bearer ";
+        if (authHeader != null && authHeader.startsWith(bearer)) {
+            String accessToken = authHeader.substring(bearer.length());
+            Claims claims = jwtService.getClaims(accessToken);
+            Long userId = Long.valueOf(claims.getSubject());
+            refreshTokenService.deleteByUserId(userId);
+            return Mono.just(ResponseEntity.status(HttpStatus.OK).body("Logout of all sessions is successful"));
+        }
+
+        return Mono.error(new RuntimeException("Authorization header is missing or invalid"));
     }
 }

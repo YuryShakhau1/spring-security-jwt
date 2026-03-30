@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Optional;
 
 @AllArgsConstructor
 @Service
@@ -19,8 +20,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     private final RefreshTokenRepository repository;
 
     @Override
-    public boolean existsByUserIdAndSessionId(Long userId, String sessionId) {
-        return repository.existsByUserIdAndSessionId(userId, sessionId);
+    public RefreshTokenEntity findByUserIdAndSessionId(Long userId, String sessionId) {
+        return repository.findByUserIdAndSessionId(userId, sessionId).orElse(null);
     }
 
     @Override

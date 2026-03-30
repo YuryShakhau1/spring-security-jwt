@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshTokenEntity, Long> {
 
-    boolean existsByUserIdAndSessionId(Long userId, String sessionId);
+    Optional<RefreshTokenEntity> findByUserIdAndSessionId(Long userId, String sessionId);
     void deleteByUserIdAndSessionId(Long userId, String sessionId);
     void deleteByUserId(Long userId);
 }
