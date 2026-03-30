@@ -4,14 +4,9 @@ services:
   postgres-security:
     image: postgres:14.7-alpine
     environment:
-      POSTGRES_USER: username
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: security_database
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready", "-d", "clients_database" ]  # Проверка доступности базы
-      interval: 10s
-      timeout: 3s
-      retries: 3
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
