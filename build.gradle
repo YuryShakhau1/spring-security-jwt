@@ -32,7 +32,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.42'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+    testImplementation 'org.flywaydb:flyway-core'
     testImplementation 'org.testcontainers:postgresql:1.19.7'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

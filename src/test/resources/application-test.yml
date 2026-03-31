@@ -4,17 +4,20 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432${TEST_POSTGRES_DB}
-    username: ${TEST_POSTGRES_USER}
-    password: ${TEST_POSTGRES_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/test-security-database
+    username: test
+    password: test
     driver-class-name: org.postgresql.Driver
   jpa:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: validate
-
+      ddl-auto: update
+    show-sql: true
+    flyway:
+      enabled: true
+      locations: classpath:db/migration
 app:
   jwt:
     secret: 4pcea76ef14939c1c0ea510f8fck57a80fcd94a7420fwe6bcd0a7567c272exjau

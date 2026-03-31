@@ -1,7 +1,6 @@
 package by.shakhau.strpingsecurityjwt.security;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -11,21 +10,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
-import java.util.List;
-
+@AllArgsConstructor
 @Configuration
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final List<String> allowedOrigins;
-
-    public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter,
-            @Value("${app.cors.allowedOrigins}")
-            List<String> allowedOrigins) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.allowedOrigins = allowedOrigins;
-    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
