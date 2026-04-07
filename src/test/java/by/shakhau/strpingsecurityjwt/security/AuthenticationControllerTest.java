@@ -5,6 +5,7 @@ import by.shakhau.strpingsecurityjwt.security.AuthenticationController.AuthReque
 import by.shakhau.strpingsecurityjwt.security.AuthenticationController.TokenResponse;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ public class AuthenticationControllerTest {
     private static final String USER_NAME = "user name";
     private static final String PASSWORD = "password";
 
-    private static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
+    private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:14")
             .withDatabaseName("test-security-database")
             .withUsername("test")
             .withPassword("test");
@@ -57,8 +58,13 @@ public class AuthenticationControllerTest {
         System.setProperty("spring.datasource.password", postgres.getPassword());
     }
 
+    @AfterAll
+    public static void afterAll() {
+        postgres.stop();
+    }
+
     @BeforeEach
-    public void bFor() {
+    public void setup() {
         webClient = WebTestClient.bindToServer()
                 .baseUrl("http://localhost:" + 8080)
                 .build();
@@ -68,15 +74,18 @@ public class AuthenticationControllerTest {
     public void shouldLoginUserAndGetSecuredDataAndLogout() {
         assertThat(userService.findByName(USER_NAME)).isNull();
 
+        var password = new char[PASSWORD.length()];
+        PASSWORD.getChars(0, PASSWORD.length(), password, 0);
+
         // register new user
         webClient.post().uri("/auth/register")
-                .body(BodyInserters.fromValue(new AuthRequest(USER_NAME, PASSWORD)))
+                .body(BodyInserters.fromValue(new AuthRequest(USER_NAME, password)))
                 .exchange()
                 .expectStatus().isOk();
 
         // login user
         TokenResponse token = webClient.post().uri("/auth/login")
-                .body(BodyInserters.fromValue(new AuthRequest(USER_NAME, PASSWORD)))
+                .body(BodyInserters.fromValue(new AuthRequest(USER_NAME, password)))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(TokenResponse.class)
@@ -109,5 +118,9 @@ public class AuthenticationControllerTest {
                 .expectStatus().isOk();
 
         assertThat(users.size()).isEqualTo(1);
+
+        User user = users.get(0);
+        assertThat(user.getName()).isEqualTo(USER_NAME);
+        assertThat(user.getPassword()).isNotEqualTo(PASSWORD);
     }
 }

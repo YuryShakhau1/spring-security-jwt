@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collections;
 
 @AllArgsConstructor
@@ -30,7 +32,7 @@ public class AuthenticationController {
     @Getter
     public static class AuthRequest {
         public String userName;
-        public String password;
+        public char[] password;
     }
 
     @AllArgsConstructor
@@ -48,20 +50,26 @@ public class AuthenticationController {
 
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> register(@RequestBody AuthRequest request) {
-        if (userService.createUser(new User(null, request.getUserName(), request.getPassword())) == null) {
+        if (userService.createUser(new User(null, request.getUserName(), null), request.getPassword()) == null) {
+            Arrays.fill(request.getPassword(), '0');
             return Mono.just(ResponseEntity.status(HttpStatus.FORBIDDEN).body("User already exists"));
         }
 
+        Arrays.fill(request.getPassword(), '0');
         return Mono.just(ResponseEntity.status(HttpStatus.OK).build());
     }
 
     @PostMapping("/login")
     public Mono<ResponseEntity<TokenResponse>> login(@RequestBody AuthRequest request) {
         User user = userService.findByName(request.getUserName());
-        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        var password = new StringBuilder().append(request.getPassword());
+        Arrays.fill(request.getPassword(), '0');
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            password.delete(0, password.length());
             return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
         }
 
+        password.delete(0, password.length());
         Long userId = user.getId();
         String accessToken = jwtService.generateAccessToken(user.getId(), Collections.emptyList());
         String refreshToken = jwtService.generateRefreshToken(user.getId(), Collections.emptyList());

@@ -9,7 +9,7 @@ public interface UserService {
     Collection<User> findAll();
     User findById(Long userId);
     User findByName(String userName);
-    User createUser(User user);
+    User createUser(User user, char[] password);
     User updateUser(User user);
     void deleteByName(Long userId);
 }

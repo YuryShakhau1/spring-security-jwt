@@ -32,13 +32,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User createUser(User user) {
+    public User createUser(User user, char[] password) {
         if (repository.findByName(user.getName()).isPresent()) {
             return null;
         }
 
         user.setId(null);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setPassword(passwordEncoder.encode(new StringBuilder().append(password)));
         return repository.save(user);
     }
 
