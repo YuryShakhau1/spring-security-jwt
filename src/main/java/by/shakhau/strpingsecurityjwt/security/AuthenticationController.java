@@ -13,8 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -81,51 +81,62 @@ public class AuthenticationController {
 
     @PostMapping("/refresh")
     public Mono<ResponseEntity<TokenResponse>> refreshAccessToken(@RequestBody RefreshTokenRequest request) {
-        if (!jwtService.isTokenValid(request.getRefreshToken())) {
-            return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
-        }
+        return Mono.defer(() -> {
+                    if (!jwtService.isTokenValid(request.getRefreshToken())) {
+                        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .<TokenResponse>body(null));
+                    }
 
-        Claims claims = jwtService.getClaims(request.getRefreshToken());
-        Long userId = Long.valueOf(claims.getSubject());
-        String sessionId = (String) claims.get("session_id");
-        RefreshTokenEntity existingToken = refreshTokenService.findByUserIdAndSessionId(userId, sessionId);
-        if (request.getRefreshToken().equals(existingToken.getRefreshToken())) {
-            String accessToken = jwtService.generateAccessToken(userId, Collections.emptyList());
-            String refreshToken = jwtService.generateRefreshToken(userId, Collections.emptyList());
-            existingToken.setRefreshToken(refreshToken);
-            refreshTokenService.save(userId, refreshToken);
-            return Mono.just(ResponseEntity.ok(new TokenResponse(accessToken, refreshToken)));
-        }
+                    Claims claims = jwtService.getClaims(request.getRefreshToken());
+                    Long userId = Long.valueOf(claims.getSubject());
+                    String sessionId = (String) claims.get("session_id");
+                    RefreshTokenEntity existingToken = refreshTokenService.findByUserIdAndSessionId(userId, sessionId);
+                    if (request.getRefreshToken().equals(existingToken.getRefreshToken())) {
+                        String accessToken = jwtService.generateAccessToken(userId, Collections.emptyList());
+                        String refreshToken = jwtService.generateRefreshToken(userId, Collections.emptyList());
+                        existingToken.setRefreshToken(refreshToken);
+                        refreshTokenService.save(userId, refreshToken);
+                        return Mono.just(ResponseEntity.ok(new TokenResponse(accessToken, refreshToken)));
+                    }
 
-        return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
+                    return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .<TokenResponse>body(null));
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @DeleteMapping("/logout")
     public Mono<ResponseEntity<String>> logout(@RequestHeader("Authorization") String authHeader) {
-        var bearer = "Bearer ";
-        if (authHeader != null && authHeader.startsWith(bearer)) {
-            String accessToken = authHeader.substring(bearer.length());
-            Claims claims = jwtService.getClaims(accessToken);
-            Long userId = Long.valueOf(claims.getSubject());
-            String sessionId = (String) claims.get("session_id");
-            refreshTokenService.deleteByUserIdAndSessionId(userId, sessionId);
-            return Mono.just(ResponseEntity.status(HttpStatus.OK).body("Logout is successful"));
-        }
+        return Mono.defer(() -> {
+                    var bearer = "Bearer ";
+                    if (authHeader != null && authHeader.startsWith(bearer)) {
+                        String accessToken = authHeader.substring(bearer.length());
+                        Claims claims = jwtService.getClaims(accessToken);
+                        Long userId = Long.valueOf(claims.getSubject());
+                        String sessionId = (String) claims.get("session_id");
+                        refreshTokenService.deleteByUserIdAndSessionId(userId, sessionId);
+                        return Mono.just(ResponseEntity.status(HttpStatus.OK).body("Logout is successful"));
+                    }
 
-        return Mono.error(new RuntimeException("Authorization header is missing or invalid"));
+                    return Mono.error(new RuntimeException("Authorization header is missing or invalid"));
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @DeleteMapping("/logout/all")
     public Mono<ResponseEntity<String>> logoutAllSession(@RequestHeader("Authorization") String authHeader) {
-        var bearer = "Bearer ";
-        if (authHeader != null && authHeader.startsWith(bearer)) {
-            String accessToken = authHeader.substring(bearer.length());
-            Claims claims = jwtService.getClaims(accessToken);
-            Long userId = Long.valueOf(claims.getSubject());
-            refreshTokenService.deleteByUserId(userId);
-            return Mono.just(ResponseEntity.status(HttpStatus.OK).body("Logout of all sessions is successful"));
-        }
+        return Mono.defer(() -> {
+                    var bearer = "Bearer ";
+                    if (authHeader != null && authHeader.startsWith(bearer)) {
+                        String accessToken = authHeader.substring(bearer.length());
+                        Claims claims = jwtService.getClaims(accessToken);
+                        Long userId = Long.valueOf(claims.getSubject());
+                        refreshTokenService.deleteByUserId(userId);
+                        return Mono.just(ResponseEntity.status(HttpStatus.OK).body("Logout of all sessions is successful"));
+                    }
 
-        return Mono.error(new RuntimeException("Authorization header is missing or invalid"));
+                    return Mono.error(new RuntimeException("Authorization header is missing or invalid"));
+                })
+                .subscribeOn(Schedulers.boundedElastic());
     }
 }
