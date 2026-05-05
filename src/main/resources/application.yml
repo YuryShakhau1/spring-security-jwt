@@ -1,0 +1,29 @@
+server:
+#  port: 8080
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json,application/xml
+#    min-response-size: 1024
+
+spring:
+  profiles:
+    include: ${DB_PROFILE:db-mysql}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      show-sql: false
+
+  flyway:
+    enabled: true
+    locations:
+      classpath: db/migration
+#    baseline-on-migrate: true
+
+app:
+  jwt:
+    secret: 4pcea76ef14939c1c0ea510f8fck57a80fcd94a7420fwe6bcd0a7567c272exjau
+    access-expiration: 900000
+    refresh-expiration: 86400000
+  cors:
+    allowedOrigins: http://localhost:8080
