@@ -33,6 +33,8 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                         .pathMatchers(HttpMethod.POST, "/users/register").permitAll()
                         .pathMatchers(HttpMethod.PATCH, "/users/password/init").permitAll()
+                        .pathMatchers("/js/**", "/syles/**", "/pages/**").permitAll()
+                        .pathMatchers("/", "/index.html").permitAll()
                         .anyExchange().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .addFilterAfter(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)

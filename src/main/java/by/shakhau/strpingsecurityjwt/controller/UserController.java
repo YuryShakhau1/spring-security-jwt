@@ -4,12 +4,12 @@ import by.shakhau.strpingsecurityjwt.controller.response.Pageable;
 import by.shakhau.strpingsecurityjwt.controller.response.PageableResponse;
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.security.UserPrincipal;
-import by.shakhau.strpingsecurityjwt.service.UserRoleService;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +36,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @AllArgsConstructor
 public class UserController {
 
-    private UserRoleService userRoleService;
     private UserService service;
 
     @AllArgsConstructor
@@ -78,21 +77,6 @@ public class UserController {
         private char[] newPassword;
     }
 
-    @AllArgsConstructor
-    @Getter
-    public static class UpdateUserRoleRequest {
-        private Long userId;
-        private Long existingRoleId;
-        private Long expectedRoleId;
-    }
-
-    @AllArgsConstructor
-    @Getter
-    public static class DeleteUserRoleRequest {
-        private Long userId;
-        private Long roleId;
-    }
-
     @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
     public Mono<ResponseEntity<String>> register(@RequestBody RegisterUserRequest request) {
         return Mono.fromCallable(() -> {
@@ -113,14 +97,18 @@ public class UserController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @GetMapping(produces = APPLICATION_JSON_VALUE)
-    public Mono<PageableResponse<User>> searchByFilterPageable(@RequestBody SearchUsersRequest request) {
+    @PostMapping(value = "search", produces = APPLICATION_JSON_VALUE)
+    public Mono<PageableResponse<User>> searchByFilterPageable(
+            @RequestBody SearchUsersRequest request) {
         return Mono.fromCallable(() -> {
                     Page<User> userPage = service.searchUsers(
                             request.getFirstName(),
                             request.getLastName(),
                             request.getEmail(),
-                            PageRequest.of(request.getPageNumber(), request.getPageSize()));
+                            PageRequest.of(
+                                    request.getPageNumber(),
+                                    request.getPageSize(),
+                                    Sort.by("email").ascending()));
                     return new PageableResponse<>(
                             userPage.getContent(),
                             new Pageable<>(
@@ -176,36 +164,6 @@ public class UserController {
                     return service.updateUser(principal.getId(), user);
                 })
                 .subscribeOn(Schedulers.boundedElastic());
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @PostMapping(value = "/role", produces = APPLICATION_JSON_VALUE)
-    public Mono<Void> updateUserRole(@RequestBody UpdateUserRoleRequest request, Authentication authentication) {
-        return Mono.fromCallable(() -> {
-                    var principal = (UserPrincipal) authentication.getPrincipal();
-                    if (userRoleService.updateUserRole(
-                            principal.getId(),
-                            request.getUserId(),
-                            request.getExistingRoleId(),
-                            request.getExpectedRoleId())) {
-                        return ServerResponse.ok().build();
-                    }
-                    return ServerResponse.status(HttpStatus.FORBIDDEN).build();
-                })
-                .subscribeOn(Schedulers.boundedElastic()).then();
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @DeleteMapping(value = "/role", produces = APPLICATION_JSON_VALUE)
-    public Mono<Void> deleteUserRole(@RequestBody DeleteUserRoleRequest request, Authentication authentication) {
-        return Mono.fromCallable(() -> {
-                    UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-                    if (userRoleService.deleteByUserId(principal.getId(), request.getUserId(), request.getRoleId())) {
-                        return ServerResponse.ok().build();
-                    }
-                    return ServerResponse.status(HttpStatus.FORBIDDEN).build();
-                })
-                .subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     @DeleteMapping(value = "/me", produces = APPLICATION_JSON_VALUE)
