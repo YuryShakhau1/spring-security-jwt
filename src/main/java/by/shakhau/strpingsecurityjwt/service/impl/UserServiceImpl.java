@@ -3,15 +3,16 @@ package by.shakhau.strpingsecurityjwt.service.impl;
 import by.shakhau.strpingsecurityjwt.domain.model.Role;
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.domain.repository.UserRepository;
+import by.shakhau.strpingsecurityjwt.domain.repository.UserSpecifications;
 import by.shakhau.strpingsecurityjwt.service.RefreshTokenService;
 import by.shakhau.strpingsecurityjwt.service.UserRoleService;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Collection;
 
 import static by.shakhau.strpingsecurityjwt.domain.model.RoleType.ADMIN;
 import static by.shakhau.strpingsecurityjwt.domain.model.RoleType.SUPER_ADMIN;
@@ -27,8 +28,8 @@ public class UserServiceImpl implements UserService {
     private final RefreshTokenService refreshTokenService;
 
     @Override
-    public Collection<User> findAll() {
-        return repository.findAll();
+    public Page<User> searchUsers(String firstName, String lastName, String email, Pageable pageable) {
+        return repository.findAll(UserSpecifications.search(firstName, lastName, email), pageable);
     }
 
     @Override
@@ -73,7 +74,7 @@ public class UserServiceImpl implements UserService {
             return null;
         }
 
-        userFound.setName(user.getName());
+        userFound.setFirstName(user.getFirstName());
         userFound.setLastName(user.getLastName());
         userFound.setEmail(user.getEmail());
         return repository.save(userFound);

@@ -1,16 +1,19 @@
 package by.shakhau.strpingsecurityjwt.controller;
 
+import by.shakhau.strpingsecurityjwt.controller.response.Pageable;
+import by.shakhau.strpingsecurityjwt.controller.response.PageableResponse;
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.security.UserPrincipal;
 import by.shakhau.strpingsecurityjwt.service.UserRoleService;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,16 +42,26 @@ public class UserController {
     @AllArgsConstructor
     @Getter
     public static class RegisterUserRequest {
-        public String userName;
-        public String userLastName;
-        public String email;
-        public char[] password;
+        private String firstName;
+        private String lastName;
+        private String email;
+        private char[] password;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    public static class SearchUsersRequest {
+        private String firstName;
+        private String lastName;
+        private String email;
+        private int pageNumber;
+        private int pageSize;
     }
 
     @AllArgsConstructor
     @Getter
     public static class DeleteUserRequest {
-        public Long userId;
+        private Long userId;
     }
 
     @AllArgsConstructor
@@ -85,8 +98,8 @@ public class UserController {
         return Mono.fromCallable(() -> {
                     if (service.createUser(new User(
                             null,
-                            request.getUserName(),
-                            request.getUserLastName(),
+                            request.getFirstName(),
+                            request.getLastName(),
                             request.getEmail(),
                             null), request.getPassword()) == null) {
                         Arrays.fill(request.getPassword(), '0');
@@ -95,6 +108,25 @@ public class UserController {
 
                     Arrays.fill(request.getPassword(), '0');
                     return ResponseEntity.status(HttpStatus.OK).<String>body(null);
+                })
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @GetMapping(produces = APPLICATION_JSON_VALUE)
+    public Mono<PageableResponse<User>> searchByFilterPageable(@RequestBody SearchUsersRequest request) {
+        return Mono.fromCallable(() -> {
+                    Page<User> userPage = service.searchUsers(
+                            request.getFirstName(),
+                            request.getLastName(),
+                            request.getEmail(),
+                            PageRequest.of(request.getPageNumber(), request.getPageSize()));
+                    return new PageableResponse<>(
+                            userPage.getContent(),
+                            new Pageable<>(
+                                    userPage.getNumber(),
+                                    userPage.getSize(),
+                                    userPage.getTotalPages()));
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
