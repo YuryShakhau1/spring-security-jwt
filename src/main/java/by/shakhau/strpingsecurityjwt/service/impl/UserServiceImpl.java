@@ -1,8 +1,10 @@
 package by.shakhau.strpingsecurityjwt.service.impl;
 
+import by.shakhau.strpingsecurityjwt.domain.model.Role;
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.domain.repository.UserRepository;
 import by.shakhau.strpingsecurityjwt.service.RefreshTokenService;
+import by.shakhau.strpingsecurityjwt.service.UserRoleService;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -11,12 +13,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 
-@AllArgsConstructor
+import static by.shakhau.strpingsecurityjwt.domain.model.RoleType.ADMIN;
+import static by.shakhau.strpingsecurityjwt.domain.model.RoleType.SUPER_ADMIN;
+
 @Service
 @Transactional
+@AllArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository repository;
+    private final UserRoleService userRoleService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
 
@@ -43,21 +49,81 @@ public class UserServiceImpl implements UserService {
 
         user.setId(null);
         user.setPassword(passwordEncoder.encode(new StringBuilder().append(password)));
-        return repository.save(user);
+        User createdUser = repository.save(user);
+        userRoleService.createDefaultRole(createdUser.getId());
+        return createdUser;
     }
 
     @Override
-    public User updateUser(User user) {
-        if (repository.findById(user.getId()).isEmpty()) {
+    public User updateUser(Long actorId, User user) {
+        Role actorRole = userRoleService.highestPriorityRole(actorId);
+        if (!actorId.equals(user.getId())) {
+            if (actorRole.getPriority() > ADMIN.getPriority()) {
+                return null;
+            }
+
+            if (!SUPER_ADMIN.getPriority().equals(actorRole.getPriority())
+                    && userRoleService.hasRole(user.getId(), SUPER_ADMIN)) {
+                return null;
+            }
+        }
+
+        User userFound = repository.findById(user.getId()).orElse(null);
+        if (userFound == null) {
             return null;
         }
 
-        return repository.save(user);
+        userFound.setName(user.getName());
+        userFound.setLastName(user.getLastName());
+        userFound.setEmail(user.getEmail());
+        return repository.save(userFound);
     }
 
     @Override
-    public void deleteById(Long userId) {
-        refreshTokenService.deleteByUserId(userId);
-        repository.deleteById(userId);
+    public boolean updatePassword(String email, char[] password) {
+        User user = findByEmail(email);
+        if (user.getPassword() == null) {
+            boolean superAdmin = userRoleService.findByUserId(user.getId()).stream()
+                    .anyMatch(ur -> SUPER_ADMIN.getName().equals(ur.getRole().getName()));
+            if (superAdmin) {
+                user.setPassword(passwordEncoder.encode(new StringBuilder().append(password)));
+                repository.save(user);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean updatePassword(Long userId, char[] oldPassword, char[] newPassword) {
+        User user = findById(userId);
+        if (user.getPassword().equals(passwordEncoder.encode(new StringBuilder().append(oldPassword)))) {
+            user.setPassword(passwordEncoder.encode(new StringBuilder().append(newPassword)));
+            repository.save(user);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public void deleteById(Long actorId, Long targetUserId) {
+        if (actorId.equals(targetUserId)) {
+            deleteById(targetUserId);
+            return;
+        }
+
+        Role actorRole = userRoleService.highestPriorityRole(actorId);
+        Role targetUserRole = userRoleService.highestPriorityRole(targetUserId);
+        if (actorRole.getPriority() <= targetUserRole.getPriority()) {
+            deleteById(targetUserId);
+        }
+    }
+
+    private void deleteById(Long targetUserId) {
+        refreshTokenService.deleteByUserId(targetUserId);
+        userRoleService.deleteByUserId(targetUserId);
+        repository.deleteById(targetUserId);
     }
 }

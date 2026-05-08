@@ -10,6 +10,8 @@ public interface UserService {
     User findById(Long userId);
     User findByEmail(String email);
     User createUser(User user, char[] password);
-    User updateUser(User user);
-    void deleteById(Long userId);
+    User updateUser(Long actorId, User user);
+    boolean updatePassword(String email, char[] password);
+    boolean updatePassword(Long userId, char[] oldPassword, char[] newPassword);
+    void deleteById(Long actorId, Long targetUserId);
 }

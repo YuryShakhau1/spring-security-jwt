@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter implements WebFilter {
             var authorities = roles.stream()
                     .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
-            UserPrincipal principal = new UserPrincipal(userId, authorities);
+            var principal = new UserPrincipal(userId, authorities);
             var auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
             return chain.filter(exchange).contextWrite(ReactiveSecurityContextHolder.withAuthentication(auth));
         }

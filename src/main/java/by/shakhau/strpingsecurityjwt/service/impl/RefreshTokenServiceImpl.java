@@ -1,6 +1,6 @@
 package by.shakhau.strpingsecurityjwt.service.impl;
 
-import by.shakhau.strpingsecurityjwt.domain.model.RefreshTokenEntity;
+import by.shakhau.strpingsecurityjwt.domain.model.RefreshToken;
 import by.shakhau.strpingsecurityjwt.domain.repository.RefreshTokenRepository;
 import by.shakhau.strpingsecurityjwt.security.JwtService;
 import by.shakhau.strpingsecurityjwt.service.RefreshTokenService;
@@ -14,21 +14,21 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-@AllArgsConstructor
 @Service
 @Transactional
+@AllArgsConstructor
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     private final JwtService jwtService;
     private final RefreshTokenRepository repository;
 
     @Override
-    public RefreshTokenEntity findByUserIdAndSessionId(Long userId, String sessionId) {
+    public RefreshToken findByUserIdAndSessionId(Long userId, String sessionId) {
         return repository.findByUserIdAndSessionId(userId, sessionId).orElse(null);
     }
 
     @Override
-    public List<RefreshTokenEntity> findByUserId(Long userId) {
+    public List<RefreshToken> findByUserId(Long userId) {
         return repository.findByUserId(userId);
     }
 
@@ -43,7 +43,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         String sessionId = (String) refreshTokenClaims.get("session_id");
         Date expiredAt = refreshTokenClaims.getExpiration();
 
-        RefreshTokenEntity token = new RefreshTokenEntity();
+        RefreshToken token = new RefreshToken();
         token.setUserId(userId);
         token.setSessionId(sessionId);
         token.setCreatedAt(new Date());
@@ -53,7 +53,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public void save(RefreshTokenEntity refreshToken) {
+    public void save(RefreshToken refreshToken) {
         repository.save(refreshToken);
     }
 
@@ -68,7 +68,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
-    public void deleteAll(Collection<RefreshTokenEntity> toDelete) {
+    public void deleteAll(Collection<RefreshToken> toDelete) {
         repository.deleteAll(toDelete);
     }
 }

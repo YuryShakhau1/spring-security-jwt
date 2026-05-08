@@ -1,17 +1,17 @@
 package by.shakhau.strpingsecurityjwt.controller;
 
-import by.shakhau.strpingsecurityjwt.domain.model.RefreshTokenEntity;
+import by.shakhau.strpingsecurityjwt.domain.model.RefreshToken;
 import by.shakhau.strpingsecurityjwt.domain.model.User;
 import by.shakhau.strpingsecurityjwt.security.JwtConfig;
 import by.shakhau.strpingsecurityjwt.security.JwtService;
 import by.shakhau.strpingsecurityjwt.service.RefreshTokenService;
+import by.shakhau.strpingsecurityjwt.service.UserRoleService;
 import by.shakhau.strpingsecurityjwt.service.UserService;
 import by.shakhau.strpingsecurityjwt.util.HashUtils;
 import io.jsonwebtoken.Claims;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,10 +25,10 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @RestController
@@ -36,19 +36,11 @@ import java.util.List;
 public class AuthenticationController {
 
     private final JwtService jwtService;
-    private final RefreshTokenService refreshTokenService;
-    private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
     private final JwtConfig jwtConfig;
-
-    @AllArgsConstructor
-    @Getter
-    public static class RegisterRequest {
-        public String userName;
-        public String userLastName;
-        public String email;
-        public char[] password;
-    }
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
+    private final UserRoleService userRoleService;
+    private final UserService userService;
 
     @AllArgsConstructor
     @Getter
@@ -70,46 +62,27 @@ public class AuthenticationController {
         public String refreshToken;
     }
 
-    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<String>> register(@RequestBody RegisterRequest request) {
-        return Mono.fromCallable(() -> {
-                    if (userService.createUser(new User(
-                            null,
-                            request.getUserName(),
-                            request.getUserLastName(),
-                            request.getEmail(),
-                            null), request.getPassword()) == null) {
-                        Arrays.fill(request.getPassword(), '0');
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("User already exists");
-                    }
-
-                    Arrays.fill(request.getPassword(), '0');
-                    return ResponseEntity.status(HttpStatus.OK).<String>body(null);
-                })
-                .subscribeOn(Schedulers.boundedElastic());
-    }
-
     @PostMapping("/login")
-    public Mono<ResponseEntity<TokenResponse>> login(@RequestBody LoginRequest request) {
+    public Mono<ResponseEntity<TokenResponse>> login(@RequestBody AuthenticationController.LoginRequest request) {
         return Mono.fromCallable(() -> {
                     User user = userService.findByEmail(request.getEmail());
                     var password = new StringBuilder().append(request.getPassword());
                     Arrays.fill(request.getPassword(), '0');
                     if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
                         password.delete(0, password.length());
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).<TokenResponse>body(null);
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).<AuthenticationController.TokenResponse>body(null);
                     }
 
                     password.delete(0, password.length());
                     Long userId = user.getId();
-                    String accessToken = jwtService.generateAccessToken(user.getId(), Collections.emptyList());
-                    String refreshToken = jwtService.generateRefreshToken(user.getId(), null, Collections.emptyList());
+                    String accessToken = jwtService.generateAccessToken(user.getId(), userRoles(userId));
+                    String refreshToken = jwtService.generateRefreshToken(user.getId(), null);
 
                     refreshTokenService.save(userId, refreshToken);
 
                     deleteSessionOutOfLimit(userId);
 
-                    return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
+                    return ResponseEntity.ok(new AuthenticationController.TokenResponse(accessToken, refreshToken));
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
@@ -125,13 +98,13 @@ public class AuthenticationController {
                     Claims claims = jwtService.getClaims(request.getRefreshToken());
                     Long userId = Long.valueOf(claims.getSubject());
                     String sessionId = (String) claims.get("session_id");
-                    RefreshTokenEntity existingToken = refreshTokenService.findByUserIdAndSessionId(userId, sessionId);
+                    RefreshToken existingToken = refreshTokenService.findByUserIdAndSessionId(userId, sessionId);
                     if (existingToken == null || !refreshTokenHash.equals(existingToken.getRefreshTokenHash())) {
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).<TokenResponse>body(null);
                     }
 
-                    String accessToken = jwtService.generateAccessToken(userId, Collections.emptyList());
-                    String refreshToken = jwtService.generateRefreshToken(userId, sessionId, Collections.emptyList());
+                    String accessToken = jwtService.generateAccessToken(userId, userRoles(userId));
+                    String refreshToken = jwtService.generateRefreshToken(userId, sessionId);
                     existingToken.setRefreshTokenHash(HashUtils.sha256(refreshToken));
                     existingToken.setExpiredAt(jwtService.getClaims(refreshToken).getExpiration());
                     refreshTokenService.save(existingToken);
@@ -180,12 +153,12 @@ public class AuthenticationController {
         int maxSessionCount = jwtConfig.getMaxSessionCount();
         int validTokensCount = 0;
         if (sessionCount > maxSessionCount) {
-            List<RefreshTokenEntity> tokens = refreshTokenService.findByUserId(userId);
+            List<RefreshToken> tokens = refreshTokenService.findByUserId(userId);
             if (tokens.size() > maxSessionCount) {
                 var dateNow = new Date();
-                var tokensToDelete = new ArrayList<RefreshTokenEntity>();
-                tokens.sort(Comparator.comparing(RefreshTokenEntity::getCreatedAt).reversed());
-                for (RefreshTokenEntity token : tokens) {
+                var tokensToDelete = new ArrayList<RefreshToken>();
+                tokens.sort(Comparator.comparing(RefreshToken::getCreatedAt).reversed());
+                for (RefreshToken token : tokens) {
                     if (validTokensCount < maxSessionCount && token.getExpiredAt().after(dateNow)) {
                         validTokensCount++;
                     } else {
@@ -196,5 +169,11 @@ public class AuthenticationController {
                 refreshTokenService.deleteAll(tokensToDelete);
             }
         }
+    }
+
+    private List<String> userRoles(Long userId) {
+        return userRoleService.findByUserId(userId).stream()
+                .map(ur -> ur.getRole().getName())
+                .collect(Collectors.toList());
     }
 }

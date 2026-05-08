@@ -4,17 +4,19 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Date;
 
-@Entity(name = "refresh_tokens")
+@Entity
+@Table(name = "refresh_tokens")
 @Getter
 @Setter
-@EqualsAndHashCode
-public class RefreshTokenEntity {
+@EqualsAndHashCode(of = { "userId", "sessionId" })
+public class RefreshToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

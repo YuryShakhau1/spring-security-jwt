@@ -37,12 +37,11 @@ public class JwtService {
                 .compact();
     }
 
-    public String generateRefreshToken(Long userId, String sessionId, List<String> roles) {
+    public String generateRefreshToken(Long userId, String sessionId) {
         Date now = new Date();
         return Jwts.builder()
                 .setSubject(String.valueOf(userId))
                 .claim("session_id", Optional.ofNullable(sessionId).orElseGet(() -> UUID.randomUUID().toString()))
-                .claim("roles", roles)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + refreshExpiration))
                 .signWith(secretKey, SignatureAlgorithm.HS256)
