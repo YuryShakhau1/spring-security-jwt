@@ -1,8 +1,24 @@
-<html>
+<!DOCTYPE html>
+<html ng-app="forecastModule">	
 <head>
-
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Login</title>
+	<script src="./js/login-aaa.js"></script>
+	<link href="./css/login-aaa.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-    <h1>Login page</h1>
+	<div class="login-panel">
+		<div class="login-input-container">
+			<input id="email" class="login-input"
+				name="email" type="text" placeholder="Email" ng-keyup="$event.keyCode == 13 && login()"/>
+		</div>
+		<div class="login-input-container">
+			<input id="password" class="login-input"
+				name="password" type="password" placeholder="Password" ng-keyup="$event.keyCode == 13 && login()"/>
+		</div>
+		<div class="login-input-container">
+			<button class="login-input" onclick="login()">Log in</button>
+		</div>
+	</div>
 </body>
 </html>
