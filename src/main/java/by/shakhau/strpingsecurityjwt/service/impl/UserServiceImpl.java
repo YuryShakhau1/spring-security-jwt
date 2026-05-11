@@ -110,12 +110,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteById(Long actorId, Long targetUserId) {
+        Role actorRole = userRoleService.highestPriorityRole(actorId);
         if (actorId.equals(targetUserId)) {
+            if (SUPER_ADMIN.getPriority().equals(actorRole.getPriority())) {
+                return;
+            }
+
             deleteById(targetUserId);
             return;
         }
 
-        Role actorRole = userRoleService.highestPriorityRole(actorId);
         Role targetUserRole = userRoleService.highestPriorityRole(targetUserId);
         if (actorRole.getPriority() <= targetUserRole.getPriority()) {
             deleteById(targetUserId);

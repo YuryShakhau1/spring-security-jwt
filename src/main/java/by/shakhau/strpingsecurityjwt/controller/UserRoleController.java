@@ -49,14 +49,14 @@ public class UserRoleController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @PostMapping(value = "/fetch", produces = APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/fetch", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Flux<UserRole> findUserRoles(@RequestBody FindUserRoleRequest request) {
         return Flux.defer(() -> Flux.fromIterable(userRoleService.findByUserId(request.getUserId())))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @PostMapping(produces = APPLICATION_JSON_VALUE)
+    @PostMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Mono<Void> updateUserRole(@RequestBody UpdateUserRoleRequest request, Authentication authentication) {
         return Mono.fromCallable(() -> {
                     var principal = (UserPrincipal) authentication.getPrincipal();
@@ -73,7 +73,7 @@ public class UserRoleController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @DeleteMapping(produces = APPLICATION_JSON_VALUE)
+    @DeleteMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Mono<Void> deleteUserRole(@RequestBody DeleteUserRoleRequest request, Authentication authentication) {
         return Mono.fromCallable(() -> {
                     UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();

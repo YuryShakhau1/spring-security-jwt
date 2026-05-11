@@ -15,13 +15,13 @@ const refreshToken = async () => {
         showHideElement('error-message', true);
     }
 
-    await response.text();
-    localStorage.setItem('authToken', token);
-    window.location.href = './user.html';
+    const accessToken = await response.text();
+    const accessTokenParams = processToken(accessToken);
+    localStorage.setItem('accessToken', accessToken);
 };
 
 const tokenToJson = (token) => {
-    const base64Url = token.split('.')[0];
+    const base64Url = token.split('.')[1];
     const base64 = base64Url.replace('/-/g', '+').replace('/_/g', '/');
 
     const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
@@ -31,8 +31,20 @@ const tokenToJson = (token) => {
     return JSON.parse(jsonPayload);
 };
 
-const getCookie = (name) => {
-    const cookie = document.cookie;
-    const parts = cookie.split(`${name}=`)
-    const refreshToken = parts.pop().split(';').shift();
+const urlAccordingRole = (tokenParams) => {
+    if (tokenParams.roles.includes('ROLE_USER')) {
+        return '/user.html';
+    }
+    if (tokenParams.roles.includes('ROLE_ADMIN') || tokenParams.roles.includes('ROLE_SUPER_ADMIN')) {
+        return '/admin.html';
+    }
+    throw new Error('Valid user role not found');
+};
+
+const processToken = (token) => {
+    const accessTokenParams = tokenToJson(token);
+    const expirationDate = new Date(accessTokenParams.exp * 1000);
+    localStorage.setItem('accessTokenExpDate', expirationDate);
+    localStorage.setItem('accessTokenParams', accessTokenParams);
+    return accessTokenParams;
 };

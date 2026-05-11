@@ -97,7 +97,7 @@ public class UserController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @PostMapping(value = "search", produces = APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/search", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Mono<PageableResponse<User>> searchByFilterPageable(
             @RequestBody SearchUsersRequest request) {
         return Mono.fromCallable(() -> {
@@ -176,7 +176,7 @@ public class UserController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
-    @DeleteMapping(value = "/", produces = APPLICATION_JSON_VALUE)
+    @DeleteMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
     public Mono<Void> deleteUserById(@RequestBody DeleteUserRequest request, Authentication authentication) {
         return Mono.fromRunnable(() -> {
                     var principal = (UserPrincipal) authentication.getPrincipal();

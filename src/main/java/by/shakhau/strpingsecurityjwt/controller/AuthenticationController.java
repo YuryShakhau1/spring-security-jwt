@@ -12,7 +12,9 @@ import io.jsonwebtoken.Claims;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -29,6 +32,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @AllArgsConstructor
 @RestController
@@ -51,26 +56,19 @@ public class AuthenticationController {
 
     @AllArgsConstructor
     @Getter
-    public static class TokenResponse {
-        private String accessToken;
-        private String refreshToken;
-    }
-
-    @AllArgsConstructor
-    @Getter
     public static class RefreshTokenRequest {
         public String refreshToken;
     }
 
-    @PostMapping("/login")
-    public Mono<ResponseEntity<TokenResponse>> login(@RequestBody AuthenticationController.LoginRequest request) {
+    @PostMapping(value = "/login", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<String>> login(@RequestBody LoginRequest request, ServerHttpResponse response) {
         return Mono.fromCallable(() -> {
                     User user = userService.findByEmail(request.getEmail());
                     var password = new StringBuilder().append(request.getPassword());
                     Arrays.fill(request.getPassword(), '0');
                     if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
                         password.delete(0, password.length());
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).<AuthenticationController.TokenResponse>body(null);
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("");
                     }
 
                     password.delete(0, password.length());
@@ -82,16 +80,25 @@ public class AuthenticationController {
 
                     deleteSessionOutOfLimit(userId);
 
-                    return ResponseEntity.ok(new AuthenticationController.TokenResponse(accessToken, refreshToken));
+                    ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                            .httpOnly(true)
+                            .secure(false)
+                            .path("/")
+                            .maxAge(jwtConfig.getRefreshExpiration())
+                            .sameSite("Strict")
+                            .build();
+                    response.addCookie(refreshCookie);
+
+                    return ResponseEntity.ok().body(accessToken);
                 })
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    @PostMapping("/refresh")
-    public Mono<ResponseEntity<TokenResponse>> refreshAccessToken(@RequestBody RefreshTokenRequest request) {
+    @PostMapping(value = "/refresh", consumes = APPLICATION_JSON_VALUE)
+    public Mono<Void> refreshAccessToken(@RequestBody RefreshTokenRequest request, ServerHttpResponse response) {
         return Mono.fromCallable(() -> {
                     if (!jwtService.isTokenValid(request.getRefreshToken())) {
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).<TokenResponse>body(null);
+                        return ServerResponse.status(HttpStatus.UNAUTHORIZED).build();
                     }
 
                     var refreshTokenHash = HashUtils.sha256(request.getRefreshToken());
@@ -100,7 +107,7 @@ public class AuthenticationController {
                     String sessionId = (String) claims.get("session_id");
                     RefreshToken existingToken = refreshTokenService.findByUserIdAndSessionId(userId, sessionId);
                     if (existingToken == null || !refreshTokenHash.equals(existingToken.getRefreshTokenHash())) {
-                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).<TokenResponse>body(null);
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
                     }
 
                     String accessToken = jwtService.generateAccessToken(userId, userRoles(userId));
@@ -108,9 +115,28 @@ public class AuthenticationController {
                     existingToken.setRefreshTokenHash(HashUtils.sha256(refreshToken));
                     existingToken.setExpiredAt(jwtService.getClaims(refreshToken).getExpiration());
                     refreshTokenService.save(existingToken);
-                    return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken));
+
+                    ResponseCookie accessCookie = ResponseCookie.from("accessToken", accessToken)
+                            .httpOnly(true)
+                            .secure(false)
+                            .path("/")
+                            .maxAge(jwtConfig.getAccessExpiration())
+                            .sameSite("Strict")
+                            .build();
+                    response.addCookie(accessCookie);
+
+                    ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                            .httpOnly(true)
+                            .secure(false)
+                            .path("/")
+                            .maxAge(jwtConfig.getRefreshExpiration())
+                            .sameSite("Strict")
+                            .build();
+                    response.addCookie(refreshCookie);
+
+                    return ServerResponse.ok().build();
                 })
-                .subscribeOn(Schedulers.boundedElastic());
+                .subscribeOn(Schedulers.boundedElastic()).then();
     }
 
     @DeleteMapping("/logout")

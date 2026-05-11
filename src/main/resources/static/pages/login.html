@@ -1,23 +1,27 @@
 <!DOCTYPE html>
-<html ng-app="forecastModule">	
+<html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<title>Login</title>
-	<script src="./js/login-aaa.js"></script>
-	<link href="./css/login-aaa.css" rel="stylesheet" type="text/css">
+	<script src="../js/token-aaa.js" defer></script>
+	<script src="../js/login-aaa.js" defer></script>
+	<link href="../styles/login-aaa.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 	<div class="login-panel">
 		<div class="login-input-container">
 			<input id="email" class="login-input"
-				name="email" type="text" placeholder="Email" ng-keyup="$event.keyCode == 13 && login()"/>
+				name="email" type="text" placeholder="Email">
 		</div>
 		<div class="login-input-container">
 			<input id="password" class="login-input"
-				name="password" type="password" placeholder="Password" ng-keyup="$event.keyCode == 13 && login()"/>
+				name="password" type="password" placeholder="Password">
 		</div>
 		<div class="login-input-container">
-			<button class="login-input" onclick="login()">Log in</button>
+			<button id="login-button" class="login-input">Log in</button>
+		</div>
+		<div id="error-message" class="login-input-container" style="display: none;">
+			<div class="error-message">Wrong login or password</div>
 		</div>
 	</div>
 </body>
