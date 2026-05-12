@@ -2,26 +2,43 @@
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>Login</title>
+	<title>Register</title>
+	<script src="../js/common-aaa.js" defer></script>
 	<script src="../js/token-aaa.js" defer></script>
-	<script src="../js/login-aaa.js" defer></script>
-	<link href="../styles/login-aaa.css" rel="stylesheet" type="text/css">
+	<script src="../js/register-aaa.js" defer></script>
+	<link href="../styles/register-aaa.css" rel="stylesheet" type="text/css">
 </head>
 <body>
-	<div class="login-panel">
+	<div class="register-panel">
+		<h2>Register</h2>
+		<div class="login-input-container">
+			<input id="first-name" class="login-input"
+				name="first-name" type="text" placeholder="First name">
+		</div>
+		<div class="login-input-container">
+			<input id="last-name" class="login-input"
+				   name="last-name" type="text" placeholder="Last name">
+		</div>
 		<div class="login-input-container">
 			<input id="email" class="login-input"
-				name="email" type="text" placeholder="Email">
+				   name="email" type="text" placeholder="Email">
 		</div>
 		<div class="login-input-container">
 			<input id="password" class="login-input"
-				name="password" type="password" placeholder="Password">
+					name="password" type="password" placeholder="Password">
 		</div>
 		<div class="login-input-container">
-			<button id="login-button" class="login-input">Log in</button>
+			<input id="repeat-password" class="login-input"
+				   name="repeat-password" type="password" placeholder="Repeat password">
+		</div>
+		<div class="login-input-container">
+			<button id="register-button" class="login-input">Register</button>
+		</div>
+		<div class="login-input-container">
+			<a href="./login.html">Log in</a>
 		</div>
 		<div id="error-message" class="login-input-container" style="display: none;">
-			<div class="error-message">Wrong login or password</div>
+			<div id="error-message-block" class="error-message"></div>
 		</div>
 	</div>
 </body>

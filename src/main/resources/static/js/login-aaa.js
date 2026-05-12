@@ -15,21 +15,13 @@ const login = async () => {
 
     if (!response.ok) {
         showHideElement('error-message', true);
+        return;
     }
 
     const accessToken = await response.text();
     const accessTokenParams = processToken(accessToken);
     localStorage.setItem('accessToken', accessToken);
     window.location.href = '.' + urlAccordingRole(accessTokenParams);
-};
-
-const showHideElement = (id, show) => {
-    const errorMessageElement = document.getElementById(id);
-    if (show) {
-        errorMessageElement.style.display = 'block';
-    } else {
-        errorMessageElement.style.display = 'none';
-    }
 };
 
 const emailInput = document.getElementById('email');

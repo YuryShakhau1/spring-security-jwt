@@ -139,7 +139,7 @@ public class AuthenticationController {
                 .subscribeOn(Schedulers.boundedElastic()).then();
     }
 
-    @DeleteMapping("/logout")
+    @PostMapping("/logout")
     public Mono<ResponseEntity<String>> logout(@RequestHeader("Authorization") String authHeader) {
         return Mono.fromCallable(() -> {
                     var bearer = "Bearer ";
@@ -157,7 +157,7 @@ public class AuthenticationController {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    @DeleteMapping("/logout/all")
+    @PostMapping("/logout/all")
     public Mono<ResponseEntity<String>> logoutAllSession(@RequestHeader("Authorization") String authHeader) {
         return Mono.fromCallable(() -> {
                     var bearer = "Bearer ";

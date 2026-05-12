@@ -3,12 +3,16 @@
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<title>Login</title>
+	<script src="../js/common-aaa.js" defer></script>
 	<script src="../js/token-aaa.js" defer></script>
 	<script src="../js/login-aaa.js" defer></script>
 	<link href="../styles/login-aaa.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 	<div class="login-panel">
+		<div class="login-input-container">
+			<h2>Login</h2>
+		</div>
 		<div class="login-input-container">
 			<input id="email" class="login-input"
 				name="email" type="text" placeholder="Email">
@@ -19,6 +23,9 @@
 		</div>
 		<div class="login-input-container">
 			<button id="login-button" class="login-input">Log in</button>
+		</div>
+		<div class="login-input-container">
+			<a href="./register.html">Register</a>
 		</div>
 		<div id="error-message" class="login-input-container" style="display: none;">
 			<div class="error-message">Wrong login or password</div>

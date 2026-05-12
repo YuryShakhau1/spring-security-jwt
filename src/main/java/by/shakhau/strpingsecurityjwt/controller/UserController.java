@@ -129,32 +129,32 @@ public class UserController {
     }
 
     @PatchMapping(value = "/password/init", produces = APPLICATION_JSON_VALUE)
-    public Mono<Void> updateSuperAdminPassword(@RequestBody UpdateSuperAdminPasswordRequest request) {
+    public Mono<ResponseEntity<String>> updateSuperAdminPassword(@RequestBody UpdateSuperAdminPasswordRequest request) {
         return Mono.fromCallable(() -> {
                     if (service.updatePassword(request.getEmail(), request.getPassword())) {
                         Arrays.fill(request.getPassword(), '0');
-                        return ServerResponse.ok().build();
+                        return ResponseEntity.ok().<String>body(null);
                     }
                     Arrays.fill(request.getPassword(), '0');
-                    return ServerResponse.notFound().build();
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Admin not found");
                 })
-                .subscribeOn(Schedulers.boundedElastic()).then();
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PatchMapping(value = "/password", produces = APPLICATION_JSON_VALUE)
-    public Mono<Void> updatePassword(@RequestBody UpdateUserPasswordRequest request, Authentication authentication) {
+    public Mono<ResponseEntity<String>> updatePassword(@RequestBody UpdateUserPasswordRequest request, Authentication authentication) {
         return Mono.fromCallable(() -> {
                     UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
                     if (service.updatePassword(principal.getId(), request.getOldPassword(), request.getNewPassword())) {
                         Arrays.fill(request.getOldPassword(), '0');
                         Arrays.fill(request.getNewPassword(), '0');
-                        return ServerResponse.ok().build();
+                        return ResponseEntity.ok().<String>body(null);
                     }
                     Arrays.fill(request.getOldPassword(), '0');
                     Arrays.fill(request.getNewPassword(), '0');
-                    return ServerResponse.notFound().build();
+                    return ResponseEntity.ok().body("Wrong password");
                 })
-                .subscribeOn(Schedulers.boundedElastic()).then();
+                .subscribeOn(Schedulers.boundedElastic());
     }
 
     @PutMapping(produces = APPLICATION_JSON_VALUE)
