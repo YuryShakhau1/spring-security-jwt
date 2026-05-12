@@ -1,0 +1,20 @@
+<div class="header" ng-controller="headerController">
+	<div class="header-link-right">
+		<div id="log_out" class="header-link-right-button" ng-click="logout()">Log out</div>
+	</div>
+	<div class="header-link-right">
+		<select class="header-link-right-button" id="lang">
+			<option value="en">English</option>
+		</select>
+	</div>
+	<div class="header-right">
+		<div class="user">{{user.firstName}}</div><div class="user">{{user.lastName}}</div>
+	</div>
+	<a href="../../view/user/users.html" class="header-link">Main page</a>
+	<a href="../../view/forecast/events.html" class="header-link">Events</a>
+	<a href="../../view/forecast/live-events.html" class="header-link">Live events</a>
+	<a href="../../view/forecast/results.html" class="header-link">Results</a>
+	<a href="../../view/forecast/auto-forecasts.html?forecasterId=12" class="header-link">Auto forecasts</a>
+	<a href="../../view/forecast/user-forecasts.html" class="header-link">My forecasts</a>
+	<a href="../../view/forecast/administration.html" class="header-link">Administration</a>
+</div>

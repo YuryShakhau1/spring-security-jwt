@@ -1,0 +1,38 @@
+.login-panel {
+	width: 210px;
+	border: 1px solid #000000;
+	position: absolute;
+	top: 43%;
+	left: 50%;
+	margin-left: -100px;
+	margin-top: -50px;
+}
+
+.register-panel {
+	width: 210px;
+	border: 1px solid #000000;
+	position: absolute;
+	top: 35%;
+	left: 50%;
+	margin-left: -100px;
+	margin-top: -50px;
+}
+
+.login-input-container {
+	margin: 5px;
+}
+
+.login-input {
+	box-sizing: border-box;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	width: 100%;
+}
+
+.error-message {
+    color: red;
+}
+
+.login-language {
+	float: right;
+}

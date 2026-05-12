@@ -1,0 +1,67 @@
+.header {
+	width: auto;
+	height: 30px;
+	border: 1px solid #000000;
+	display: block;
+}
+
+.header-link {
+	cursor: pointer;
+	height: 30px;
+	display: inline-block;
+	border: 1px solid #AAAAAA;
+	box-sizing: border-box;
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-top: 7px;
+	margin-top: 0px;
+	color: #000000;
+}
+
+.header-link-right-button {
+	cursor: pointer;
+	height: 28px;
+	display: inline-block;
+	border: 1px solid #AAAAAA;
+	box-sizing: border-box;
+	padding-left: 10px;
+	padding-right: 10px;
+	padding-top: 7px;
+	margin-top: 0px;
+	color: #000000;
+}
+
+.header-link:HOVER {
+	background: #DDDDDD;
+}
+
+.header-link:ACTIVE {
+	background: #777777;
+}
+
+.header-link-selected {
+	cursor: pointer;
+	height: 30px;
+	display: inline-block;
+	border: 1px solid #AAAAAA;
+	box-sizing: border-box;
+	color: #000000;
+	background: #EEEEEE;
+	font-weight: bold;
+}
+
+.header-link-selected:HOVER {
+	background: #DDDDDD;
+}
+
+.header-link-selected:ACTIVE {
+	background: #777777;
+}
+
+.header-right {
+	cursor: pointer;
+	height: 30px;
+	display: inline-block;
+	box-sizing: border-box;
+	float: right;
+}
